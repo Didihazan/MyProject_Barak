@@ -95,5 +95,88 @@ char **splitArgument(char *str)
     return arguments;
 }
 
-// בכל שינוי יש לבצע קומיט מתאים העבודה מחייבת עבודה עם גיט.
-// ניתן להוסיף פונקציות עזר לתוכנית רק לשים לב שלא מוסיפים את חתימת הפונקציה לקובץ הכותרות
+void logout(char *input)
+{
+    free(input);
+    puts("logout");
+    exit(EXIT_SUCCESS); // EXIT_SUCCESS = 0
+}
+
+void echo(char **arguments)
+{
+
+    // int i = 1;
+    // while (*(arguments + i))
+    //     printf("%s ", *(arguments + i));
+    // i=1
+    // while (arguments[i])
+    //     printf("%s ", arguments[i]);
+
+    while (*(++arguments))
+        printf("%s ", *arguments);
+
+    puts("");
+}
+//לקחת את המחרוזת, ולהוריד את הרווחים בין כל המילים שיש בתוך הגרשיים (את ה\0)
+void cd(char **path) {
+    if (strncmp(path[1], "\"", 1) != 0 && path[2] != NULL) {
+        printf("-myShell: cd: too many arguments\n");
+        return;
+    } // בדיקה האם יש יותר מדי ארגומנטים
+
+    else if (strncmp(path[1], "\"", 1) == 0) { // אם יש גרש בהתחלה
+        int i = 2; //אחרי הלולאה המשתנה i יכיל את המיקום של הארגומנט האחרון
+        while (path[i] != NULL) {
+            i++;
+        }
+        int size = strlen(path[i - 1])-1; // אורך הארגומנט האחרון
+        if(strcmp(path[i - 1]+size, "\"") != 0){ //בדיקה אם יש גרש בסוף
+           printf("-myShell: cd: too many arguments\n");
+            return;
+        }
+        char *temp = (char *)malloc((strlen(path[1]) + 1) * sizeof(char)); // הקצאת זכרון למחרוזת שאמורה להחזיק את הנתיב
+        strcpy(temp, path[1]); // העתקת המחרוזת למשתנה הזמני
+        strcat(temp, " "); // הוספת רווח בסוף המחרוזת
+        memmove(temp,temp+1,strlen(temp));// מחיקת הגרש
+        for(int j=2;j<i;j++){
+            temp = (char *)realloc(temp,((strlen(path[j])+2) * sizeof(char))); //הוספת מקום למחרוזת הבאה
+            if(j == i-1){ // אם זה הארגומנט האחרון
+                strcat(temp, path[j]); // הוספת הארגומנט למחרוזת
+                 temp[strlen(temp)-1] = '\0'; // מחיקת הגרש
+            }else{
+               strcat(temp, path[j]); // הוספת הארגומנט למחרוזת
+                 strcat(temp, " "); // הוספת רווח בסוף המחרוזת
+            }  
+        }
+        if (chdir(temp) != 0) { // בדיקה האם הצלחתי לשנות נתיב
+            printf("-myShell: cd: %s: No such file or directory", temp);
+        }
+        free(temp);
+    }
+    else if (chdir(path[1]) != 0)  
+        printf("-myShell: cd: %s: No such file or directory\n",path[1]);
+}
+
+
+void cp(char **arguments)
+{
+    char ch;
+    FILE *src, *des;
+    if ((src = fopen(arguments[1], "r")) == NULL)
+    {
+        puts("error");
+        return;
+    }
+
+    if ((des = fopen(arguments[2], "w")) == NULL)
+    {
+        puts("error");
+        fclose(src);
+        return;
+    }
+    while ((ch = fgetc(src)) != EOF)
+        fputc(ch, des);
+
+    fclose(src);
+    fclose(des);
+}

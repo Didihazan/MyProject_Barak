@@ -29,7 +29,10 @@ char* getInputFromUser();
 char** splitArgument(char*);
 void getLocation();
 
-
+void logout(char* input);
+void echo(char** arguments);
+void cd(char **);
+void cp(char ** arguments);
 // char str[10]= hello
 // char* p =str;
 // *p ~ p[0]
