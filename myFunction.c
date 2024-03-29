@@ -8,7 +8,7 @@
 //  ולאחר הדולר ניתן אפשרות למשתמש להזין מחרוזת מבלי שנרד שורה.
 
 
-#define SIZE_BUFF 1024
+// #define SIZE_BUFF 1024
 
 void getLocation()  
 {
@@ -35,6 +35,8 @@ void getLocation()
         }
     }
 }
+
+
 char *getInputFromUser()
 {
     char ch;
@@ -49,7 +51,6 @@ char *getInputFromUser()
         str = (char *)realloc(str, size);
     }
     *(str + index) = '\0';
-        free(str);
     return str;
 
 }
@@ -80,22 +81,26 @@ char **splitArgument(char *str)
 {
     int size = 2;
     int index = 0;
-    char **arguments = (char **)malloc(size * sizeof(char *));// מקצה זיכרון למערך של מחרוזות
+    char **arguments = (char **)malloc(size * sizeof(char *));
     char *start = str;
     char *end;
 
-    while ((end = strchr(start, ' ')) != NULL)// מחפש את המרחק הראשון של הרווח
+for ( int i = 0; i < strlen(str); i++)
+{
+    if(str[i]==' ')
+        start++;
+}
+
+    while ((end = strchr(start, ' ')) != NULL)
     {
-        arguments[index] = (char *)malloc((end - start + 1) * sizeof(char)); // מקצה זיכרון למחרוזת
-        strncpy(arguments[index], start, end - start);// מעתיק את התת-מחרוזת לתוך המערך
-        arguments[index][end - start] = '\0'; // מסיים את המחרוזת בתו NULL
+        arguments[index]=start;
+        arguments[index][end - start] = '\0';
         start = end + 1;
         index++;
         size++;
-        arguments = (char **)realloc(arguments, size * sizeof(char *));// מגדיל את הזיכרון שהוקצה למערך של הארגומנטים
+        arguments = (char **)realloc(arguments, size * sizeof(char *));
     }
 
-   // מוסיף את הארגומנט האחרון
     arguments[index] = strdup(start);
     size++;
     arguments = (char **)realloc(arguments, size * sizeof(char *));
@@ -103,6 +108,7 @@ char **splitArgument(char *str)
 
     return arguments;
 }
+
 
 void logout(char *input)
 {

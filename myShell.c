@@ -48,11 +48,16 @@ int main() {
     {
         getLocation();
         char *input = getInputFromUser();
+    
         if (strcmp(input, "exit") == 0 || strncmp(input, "exit ", 5) == 0)
             logout(input);
 
         char **arguments = splitArgument(input);
-
+         if(strcmp(arguments[0], "exit") == 0){ 
+            free(arguments);
+            logout(input);
+}
+       
         if (strcmp(input, "echo") == 0)
             echo(arguments);
         else if (strcmp(input, "cd") == 0)
