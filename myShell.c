@@ -1,3 +1,6 @@
+#include "myShell.h"
+#include "myFunction.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -29,11 +32,8 @@ int main() {
             perror("uname");
             return 1;
         }
-
-        // הדפסת קישור לפרופיל הגיטהאב של המשתמש
-         char *githubUsername = "Yedidya";
          
-      printf("GitHub Username (ASCII art):\n");
+      printf("GitHub Username:\n");
         printf("__   __       _ _     _             \n");
         printf("\\ \\ / /__  __| (_) __| |_   _  __ _ \n");
         printf(" \\ V / _ \\/ _` | |/ _` | | | |/ _` |\n");

@@ -1,33 +1,40 @@
 #include "myFunction.h"
-
-// בפונקציה הנ"ל קיבלנו את הנתיב ממנו אנחנו מריצים את התוכנית שלנו
-//  עליכם לשדרג את הנראות של הנתיב כך ש-בתחילת הנתיב יופיע שם המחשב (כמו בטרמינל המקורי) בסוף יופיע הסימן דולר
-//  ולאחר הדולר ניתן אפשרות למשתמש להזין מחרוזת מבלי שנרד שורה.
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+// בפונקציה הנ"ל קיבלנו את הנתיב ממנו אנחנו מריצים את התוכנית שלנו
+//  עליכם לשדרג את הנראות של הנתיב כך ש-בתחילת הנתיב יופיע שם המחשב (כמו בטרמינל המקורי) בסוף יופיע הסימן דולר
+//  ולאחר הדולר ניתן אפשרות למשתמש להזין מחרוזת מבלי שנרד שורה.
+
 
 #define SIZE_BUFF 1024
 
-void getLocation()  // מגדיר פונקציה שמחזירה את הנתיב הנוכחי
+void getLocation()  
 {
-    char location[SIZE_BUFF];  // מגדיר מערך של תווים לשמירת הנתיב
-    char hostname[SIZE_BUFF];  // מגדיר מערך של תווים לשמירת שם המחשב
-    if (getcwd(location, SIZE_BUFF) == NULL)
+    char location[SIZE_BUFF];
+    char hostname[SIZE_BUFF]; 
+    char* username;
+
+    username = getenv("USER");
+    if (username == NULL)
         printf("Error\n");
     else
     {
-        if (gethostname(hostname, SIZE_BUFF) == -1)
+        if (getcwd(location, SIZE_BUFF) == NULL)
             printf("Error\n");
         else
         {
-            printf("\033[0;33m%s\033[0m:\033[0;32m%s\033[0m$ ", hostname, location);// מדפיס את שם המחשב בצבע כתום, את הנתיב בצבע ירוק, ואת סימן הדולר
-            fflush(stdout);   // מרוקן את הבאפר של הפלט כדי לוודא שהפלט מודפס מיד
+            if (gethostname(hostname, SIZE_BUFF) == -1)
+                printf("Error\n");
+            else
+            {
+                printf("\033[1;34m%s@%s\033[0m:\033[0;32m%s\033[0m$ ", username, hostname, location); 
+                fflush(stdout);  
+            }
         }
     }
 }
-
 char *getInputFromUser()
 {
     char ch;
@@ -42,13 +49,15 @@ char *getInputFromUser()
         str = (char *)realloc(str, size);
     }
     *(str + index) = '\0';
+        free(str);
     return str;
+
 }
 
 // עליכם לממש את הפונקציה strtok כלומר שהפונקציה הנ"ל תבצע בדיוק אותו הדבר רק בלי השימוש בפונקציה strtok
 
     // cp file file
-    //[cp,file,file,NULL]
+    // [cp,file,file,NULL]
     
     // cp\0file file
     // hello1\0hello2\0hello3\0hello4\0
@@ -102,6 +111,7 @@ void logout(char *input)
     exit(EXIT_SUCCESS); // EXIT_SUCCESS = 0
 }
 
+
 void echo(char **arguments)
 {
 
@@ -118,6 +128,7 @@ void echo(char **arguments)
     puts("");
 }
 //לקחת את המחרוזת, ולהוריד את הרווחים בין כל המילים שיש בתוך הגרשיים (את ה\0)
+
 void cd(char **path) {
     if (strncmp(path[1], "\"", 1) != 0 && path[2] != NULL) {
         printf("-myShell: cd: too many arguments\n");
@@ -179,4 +190,30 @@ void cp(char **arguments)
 
     fclose(src);
     fclose(des);
+}
+
+
+void mypipe(char **argv1,char ** argv2){
+
+    int fildes[2];
+    if (fork() == 0)
+    {
+        pipe(fildes);
+        if (fork() == 0)
+        {
+            /* first component of command line */
+            close(STDOUT_FILENO);
+            dup(fildes[1]);
+            close(fildes[1]);
+            close(fildes[0]);
+            execvp(argv1[0], argv1);
+        }
+        /* 2nd command component of command line */
+        close(STDIN_FILENO);
+        dup(fildes[0]);
+        close(fildes[0]);
+        close(fildes[1]);
+        /* standard input now comes from pipe */
+        execvp(argv2[0], argv2);
+    }
 }
