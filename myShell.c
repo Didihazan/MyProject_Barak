@@ -48,7 +48,7 @@ int main() {
     {
         getLocation();
         char *input = getInputFromUser();
-    
+    puts(input);
         if (strcmp(input, "exit") == 0 || strncmp(input, "exit ", 5) == 0)
             logout(input);
 
@@ -57,11 +57,17 @@ int main() {
             free(arguments);
             logout(input);
 }
-       
+ for (int i = 0; i < 3; i++)
+ {
+    printf("arg[%s]", arguments[i]);
+ }
+      
         if (strcmp(input, "echo") == 0)
             echo(arguments);
-        else if (strcmp(input, "cd") == 0)
+       else if (strncmp(input, "cd", 2) == 0){
+            puts("yes");
             cd(arguments);
+        }    
         else if (strcmp(input, "cp") == 0)
             cp(arguments);
         free(arguments);

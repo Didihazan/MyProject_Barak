@@ -77,34 +77,84 @@ char *getInputFromUser()
     // // [str+startIndex,str+startIndex]
     // startIndex=++i;
 
-char **splitArgument(char *str)
-{
+char *tokenize_next_segment(char *str, const char delim, int check_quotes) {
+    static char *next_segment = NULL; 
+    char *segment;
+    static int quotes_mode;
+
+    if (str != NULL) { 
+        segment = str; 
+        next_segment = NULL; 
+        quotes_mode = check_quotes;
+    } 
+    else {
+        if (next_segment == NULL) { 
+            return NULL;
+        }
+        segment = next_segment;
+    }
+
+    if (quotes_mode) {
+        if (*segment == '"') {
+            segment++;
+            char *quote_end = strchr(segment, '"');
+            if (quote_end != NULL) {
+                next_segment = quote_end;
+                *next_segment = '\0';
+                next_segment++;
+                if (*next_segment == '\0') {
+                    next_segment = NULL;
+                } else {
+                    next_segment++;
+                }
+                return segment;
+            }
+            segment--;
+        }
+    }
+
+    int segment_length = strlen(segment);
+    if (*segment == delim) {
+        for (int i = 0; i < segment_length; i++) {
+            if (*(segment + i) != delim) {
+                segment = segment + i;
+                break;
+            }
+        }
+    }
+    
+    for (int i = 0; i < strlen(segment); i++) { 
+        if (*(segment + i) == delim && *(segment + i + 1) != delim) {
+            next_segment = segment + i;
+            break;
+        }
+        if (i == strlen(segment) - 1) {
+            next_segment = NULL;
+        }
+    }
+    
+    if (next_segment != NULL) {
+        *next_segment = '\0';
+        next_segment++;
+    }
+
+    return segment;
+}
+
+char **splitArgument(char *str) {
+    char *subStr;
+    subStr = tokenize_next_segment(str, ' ', 1);
     int size = 2;
     int index = 0;
     char **arguments = (char **)malloc(size * sizeof(char *));
-    char *start = str;
-    char *end;
-
-for ( int i = 0; i < strlen(str); i++)
-{
-    if(str[i]==' ')
-        start++;
-}
-
-    while ((end = strchr(start, ' ')) != NULL)
-    {
-        arguments[index]=start;
-        arguments[index][end - start] = '\0';
-        start = end + 1;
+    *(arguments + index) = subStr;
+    while ((subStr = tokenize_next_segment(NULL, ' ', 1)) != NULL) {
         index++;
         size++;
         arguments = (char **)realloc(arguments, size * sizeof(char *));
+        *(arguments + index) = subStr;
     }
-
-    arguments[index] = strdup(start);
-    size++;
-    arguments = (char **)realloc(arguments, size * sizeof(char *));
-    arguments[size - 1] = NULL; 
+    *(arguments + (index + 1)) = NULL;
 
     return arguments;
 }
@@ -136,44 +186,14 @@ void echo(char **arguments)
 //לקחת את המחרוזת, ולהוריד את הרווחים בין כל המילים שיש בתוך הגרשיים (את ה\0)
 
 void cd(char **path) {
-    if (strncmp(path[1], "\"", 1) != 0 && path[2] != NULL) {
+    printf("petch 2", path[2]);
+    if (path[2] != NULL) {
         printf("-myShell: cd: too many arguments\n");
         return;
-    } // בדיקה האם יש יותר מדי ארגומנטים
-
-    else if (strncmp(path[1], "\"", 1) == 0) { // אם יש גרש בהתחלה
-        int i = 2; //אחרי הלולאה המשתנה i יכיל את המיקום של הארגומנט האחרון
-        while (path[i] != NULL) {
-            i++;
-        }
-        int size = strlen(path[i - 1])-1; // אורך הארגומנט האחרון
-        if(strcmp(path[i - 1]+size, "\"") != 0){ //בדיקה אם יש גרש בסוף
-           printf("-myShell: cd: too many arguments\n");
-            return;
-        }
-        char *temp = (char *)malloc((strlen(path[1]) + 1) * sizeof(char)); // הקצאת זכרון למחרוזת שאמורה להחזיק את הנתיב
-        strcpy(temp, path[1]); // העתקת המחרוזת למשתנה הזמני
-        strcat(temp, " "); // הוספת רווח בסוף המחרוזת
-        memmove(temp,temp+1,strlen(temp));// מחיקת הגרש
-        for(int j=2;j<i;j++){
-            temp = (char *)realloc(temp,((strlen(path[j])+2) * sizeof(char))); //הוספת מקום למחרוזת הבאה
-            if(j == i-1){ // אם זה הארגומנט האחרון
-                strcat(temp, path[j]); // הוספת הארגומנט למחרוזת
-                 temp[strlen(temp)-1] = '\0'; // מחיקת הגרש
-            }else{
-               strcat(temp, path[j]); // הוספת הארגומנט למחרוזת
-                 strcat(temp, " "); // הוספת רווח בסוף המחרוזת
-            }  
-        }
-        if (chdir(temp) != 0) { // בדיקה האם הצלחתי לשנות נתיב
-            printf("-myShell: cd: %s: No such file or directory", temp);
-        }
-        free(temp);
-    }
-    else if (chdir(path[1]) != 0)  
-        printf("-myShell: cd: %s: No such file or directory\n",path[1]);
+    } 
+     if (chdir(path[1]) != 0)  
+        printf("-myShell: cd: %s: No such file or directory\n", path[1]);
 }
-
 
 void cp(char **arguments)
 {
