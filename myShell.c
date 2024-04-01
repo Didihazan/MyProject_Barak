@@ -1,10 +1,6 @@
 #include "myShell.h"
 #include "myFunction.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/utsname.h>
 
 
 void welcome();
