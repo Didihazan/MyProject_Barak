@@ -74,86 +74,59 @@ char *getInputFromUser()
     // // [str+startIndex,str+startIndex]
     // startIndex=++i;
 
-char *tokenize_next_segment(char *str, const char delim, int check_quotes) {
-    static char *next_segment = NULL; 
-    char *segment;
-    static int quotes_mode;
-
-    if (str != NULL) { 
-        segment = str; 
-        next_segment = NULL; 
-        quotes_mode = check_quotes;
-    } 
-    else {
-        if (next_segment == NULL) { 
-            return NULL;
-        }
-        segment = next_segment;
-    }
-
-    if (quotes_mode) {
-        if (*segment == '"') {
-            segment++;
-            char *quote_end = strchr(segment, '"');
-            if (quote_end != NULL) {
-                next_segment = quote_end;
-                *next_segment = '\0';
-                next_segment++;
-                if (*next_segment == '\0') {
-                    next_segment = NULL;
-                } else {
-                    next_segment++;
-                }
-                return segment;
-            }
-            segment--;
-        }
-    }
-
-    int segment_length = strlen(segment);
-    if (*segment == delim) {
-        for (int i = 0; i < segment_length; i++) {
-            if (*(segment + i) != delim) {
-                segment = segment + i;
-                break;
-            }
-        }
-    }
-    
-    for (int i = 0; i < strlen(segment); i++) { 
-        if (*(segment + i) == delim && *(segment + i + 1) != delim) {
-            next_segment = segment + i;
-            break;
-        }
-        if (i == strlen(segment) - 1) {
-            next_segment = NULL;
-        }
-    }
-    
-    if (next_segment != NULL) {
-        *next_segment = '\0';
-        next_segment++;
-    }
-
-    return segment;
-}
-
-
 char **splitArgument(char *str) {
-    char *subStr;
-    subStr = tokenize_next_segment(str, ' ', 1);
     int size = 2;
     int index = 0;
+    char *start = str;
+    char *end;
     char **arguments = (char **)malloc(size * sizeof(char *));
-    *(arguments + index) = subStr;
-    while ((subStr = tokenize_next_segment(NULL, ' ', 1)) != NULL) {
-        index++;
-        size++;
-        arguments = (char **)realloc(arguments, size * sizeof(char *));
-        *(arguments + index) = subStr;
+    if (arguments == NULL) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
     }
-    *(arguments + (index + 1)) = NULL;
 
+    while (*start != '\0') {
+        if (*start == '"') {
+            end = strchr(start + 1, '"');
+            if (end == NULL) {
+                perror("missing \"");
+                errno = EINVAL;
+                break;
+            }
+            start++;
+            *end = '\0';
+            if (*(end + 1) == ' ') {
+                end += 2;
+            } else if (*(end + 1) != '\0') {
+                perror("missing space after \"");
+                 errno = EINVAL;
+                break;
+            } else {
+                end++;
+            }
+        } else {
+            end = strchr(start, ' ');
+            if (end != NULL) {
+                *end = '\0';
+                end++;
+            } else {
+                // Handle the case when there is no space at the end of the string
+                end = start + strlen(start);
+            }
+        }
+        arguments[index] = start;
+        index++;
+        if (index >= size) {
+            size += 2;
+            arguments = (char **)realloc(arguments, size * sizeof(char *));
+            if (arguments == NULL) {
+                perror("realloc");
+                exit(EXIT_FAILURE);
+            }
+        }
+        arguments[index] = NULL; // Null-terminate the array
+        start = end;
+    }
     return arguments;
 }
 
@@ -182,7 +155,6 @@ void echo(char **arguments)
     puts("");
 }
 //לקחת את המחרוזת, ולהוריד את הרווחים בין כל המילים שיש בתוך הגרשיים (את ה\0)
-
 
 void cd(char **path) {
     printf("petch 2", path[2]);
@@ -248,6 +220,7 @@ void cp(char **arguments)
     printf("File copied successfully from %s to %s.\n", source_path, destination_path);
 }
 
+
 void get_dir()
 {
     DIR *dir;
@@ -263,11 +236,44 @@ void get_dir()
 }
 
 
-void delete(char **path)
-{
-    if (unlink(path[1]) != 0)
-        printf("-myShell: delete: %s: No such file or directory\n", path[1]);
+char *get_next_token(char **str_ptr, const char *delim) {
+    if (*str_ptr == NULL) {
+        return NULL;
+    }
+
+    char *token_start = *str_ptr;
+    char *curr_ptr = *str_ptr;
+
+    int in_quotes = 0;
+
+    while (*curr_ptr != '\0') {
+        if (*curr_ptr == '\"') {
+            in_quotes = !in_quotes;
+        } else if (strchr(delim, *curr_ptr) && !in_quotes) {
+            break;
+        }
+        curr_ptr++;
+    }
+
+    if (*curr_ptr == '\0') {
+        *str_ptr = NULL;
+    } else {
+        *curr_ptr = '\0';
+        *str_ptr = curr_ptr + 1;
+    }
+
+    return token_start;
 }
+
+
+void delete(char *str) {
+    char *path;
+    while ((path = get_next_token(&str, " ")) != NULL) {
+        if (unlink(path) != 0)
+            printf("-myShell: delete: %s: No such file or directory\n", path);
+    }
+}
+
 
 void systemCall(char **arguments)
 {
@@ -283,6 +289,7 @@ void systemCall(char **arguments)
             exit(EXIT_FAILURE);
     }
 }
+
 
 void mypipe(char **argv1,char ** argv2){
 
@@ -307,4 +314,90 @@ void mypipe(char **argv1,char ** argv2){
         /* standard input now comes from pipe */
         execvp(argv2[0], argv2);
     }
+}
+
+
+void move(char **args) {
+    if (rename(args[0], args[1]) != 0) {
+        printf("Cannot move file.\n");
+    }
+}
+
+
+void echoppend(char **args) {
+    FILE *file;
+
+    file = fopen(args[1], "a");
+    if (file == NULL) {
+        printf("Cannot open file.\n");
+        return;
+    }
+
+    fprintf(file, "%s", args[0]);
+
+    fclose(file);
+}
+
+
+void echorite(char **args) {
+    FILE *file;
+
+    file = fopen(args[1], "w");
+    if (file == NULL) {
+        printf("Cannot open file.\n");
+        return;
+    }
+
+    fprintf(file, "%s", args[0]);
+
+    fclose(file);
+}
+
+
+void read(char **args) {
+    FILE *file;
+    char ch;
+
+    file = fopen(args[0], "r");
+    if (file == NULL) {
+        printf("Cannot open file.\n");
+        return;
+    }
+
+    while ((ch = fgetc(file)) != EOF) {
+        putchar(ch);
+    }
+
+    fclose(file);
+}
+
+
+void wordCount(char **args) {
+    FILE *file;
+    char ch;
+    int lines = 0, words = 0, characters = 0;
+
+    file = fopen(args[1], "r");
+    if (file == NULL) {
+        printf("Cannot open file.\n");
+        return;
+    }
+
+    while ((ch = fgetc(file)) != EOF) {
+        characters++;
+        if (ch == '\n' || ch == '\0') {
+            lines++;
+        }
+        if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\0') {
+            words++;
+        }
+    }
+
+    if (args[0][1] == 'l') {
+        printf("Lines: %d\n", lines);
+    } else if (args[0][1] == 'w') {
+        printf("Words: %d\n", words);
+    }
+
+    fclose(file);
 }
