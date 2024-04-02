@@ -74,86 +74,59 @@ char *getInputFromUser()
     // // [str+startIndex,str+startIndex]
     // startIndex=++i;
 
-char *tokenize_next_segment(char *str, const char delim, int check_quotes) {
-    static char *next_segment = NULL; 
-    char *segment;
-    static int quotes_mode;
-
-    if (str != NULL) { 
-        segment = str; 
-        next_segment = NULL; 
-        quotes_mode = check_quotes;
-    } 
-    else {
-        if (next_segment == NULL) { 
-            return NULL;
-        }
-        segment = next_segment;
-    }
-
-    if (quotes_mode) {
-        if (*segment == '"') {
-            segment++;
-            char *quote_end = strchr(segment, '"');
-            if (quote_end != NULL) {
-                next_segment = quote_end;
-                *next_segment = '\0';
-                next_segment++;
-                if (*next_segment == '\0') {
-                    next_segment = NULL;
-                } else {
-                    next_segment++;
-                }
-                return segment;
-            }
-            segment--;
-        }
-    }
-
-    int segment_length = strlen(segment);
-    if (*segment == delim) {
-        for (int i = 0; i < segment_length; i++) {
-            if (*(segment + i) != delim) {
-                segment = segment + i;
-                break;
-            }
-        }
-    }
-    
-    for (int i = 0; i < strlen(segment); i++) { 
-        if (*(segment + i) == delim && *(segment + i + 1) != delim) {
-            next_segment = segment + i;
-            break;
-        }
-        if (i == strlen(segment) - 1) {
-            next_segment = NULL;
-        }
-    }
-    
-    if (next_segment != NULL) {
-        *next_segment = '\0';
-        next_segment++;
-    }
-
-    return segment;
-}
-
-
 char **splitArgument(char *str) {
-    char *subStr;
-    subStr = tokenize_next_segment(str, ' ', 1);
     int size = 2;
     int index = 0;
+    char *start = str;
+    char *end;
     char **arguments = (char **)malloc(size * sizeof(char *));
-    *(arguments + index) = subStr;
-    while ((subStr = tokenize_next_segment(NULL, ' ', 1)) != NULL) {
-        index++;
-        size++;
-        arguments = (char **)realloc(arguments, size * sizeof(char *));
-        *(arguments + index) = subStr;
+    if (arguments == NULL) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
     }
-    *(arguments + (index + 1)) = NULL;
 
+    while (*start != '\0') {
+        if (*start == '"') {
+            end = strchr(start + 1, '"');
+            if (end == NULL) {
+                perror("missing \"");
+                errno = EINVAL;
+                break;
+            }
+            start++;
+            *end = '\0';
+            if (*(end + 1) == ' ') {
+                end += 2;
+            } else if (*(end + 1) != '\0') {
+                perror("missing space after \"");
+                 errno = EINVAL;
+                break;
+            } else {
+                end++;
+            }
+        } else {
+            end = strchr(start, ' ');
+            if (end != NULL) {
+                *end = '\0';
+                end++;
+            } else {
+                // Handle the case when there is no space at the end of the string
+                end = start + strlen(start);
+            }
+        }
+        arguments[index] = start;
+        index++;
+        if (index >= size) {
+            size += 2;
+            arguments = (char **)realloc(arguments, size * sizeof(char *));
+            if (arguments == NULL) {
+                perror("realloc");
+                exit(EXIT_FAILURE);
+            }
+        }
+        arguments[index] = NULL; // Null-terminate the array
+        start = end;
+    }
     return arguments;
 }
 
