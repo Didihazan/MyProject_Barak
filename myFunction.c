@@ -1,11 +1,5 @@
 #include "myFunction.h"
 
-// בפונקציה הנ"ל קיבלנו את הנתיב ממנו אנחנו מריצים את התוכנית שלנו
-//  עליכם לשדרג את הנראות של הנתיב כך ש-בתחילת הנתיב יופיע שם המחשב (כמו בטרמינל המקורי) בסוף יופיע הסימן דולר
-//  ולאחר הדולר ניתן אפשרות למשתמש להזין מחרוזת מבלי שנרד שורה.
-
-
-// #define SIZE_BUFF 1024
 
 void getLocation()  
 {
@@ -52,12 +46,6 @@ char *getInputFromUser()
 
 }
 
-// עליכם לממש את הפונקציה strtok כלומר שהפונקציה הנ"ל תבצע בדיוק אותו הדבר רק בלי השימוש בפונקציה strtok
-
-    // cp file file
-    // [cp,file,file,NULL]
-    
-    // cp\0file file
     // hello1\0hello2\0hello3\0hello4\0
     // subStr = address of 'h'
     // str = address of 'h'
@@ -154,10 +142,9 @@ void echo(char **arguments)
 
     puts("");
 }
-//לקחת את המחרוזת, ולהוריד את הרווחים בין כל המילים שיש בתוך הגרשיים (את ה\0)
+
 
 void cd(char **path) {
-    printf("petch 2", path[2]);
     if (path[2] != NULL) {
         printf("-myShell: cd: too many arguments\n");
         return;
@@ -169,57 +156,34 @@ void cd(char **path) {
 
 void cp(char **arguments)
 {
+    if(arguments[1]==NULL || arguments[2]==NULL){
+        puts("error");
+        return;
+    }
+    if(arguments[3]!=NULL){
+        puts("error");
+        return;
+    }
     char ch;
     FILE *src, *des;
-    char *source_path = NULL;
-    char *destination_path = NULL;
-
-    for (int i = 1; arguments[i] != NULL; i++) {
-        if (strcmp(arguments[i], "-") == 0) {
-            // Next argument should be a path
-            if (arguments[i + 1] != NULL) {
-                if (source_path == NULL)
-                    source_path = arguments[i + 1];
-                else if (destination_path == NULL)
-                    destination_path = arguments[i + 1];
-                i++; // Skip the next argument
-            } else {
-                printf("Missing path after '-'.\n");
-                return;
-            }
-        } else {
-            printf("Invalid option: %s\n", arguments[i]);
-            return;
-        }
-    }
-
-    if (source_path == NULL || destination_path == NULL) {
-        printf("Missing source or destination path.\n");
+    if ((src = fopen(arguments[1], "r")) == NULL)//open file source
+    {
+        puts("error");
         return;
     }
 
-    if ((src = fopen(source_path, "r")) == NULL)
+    if ((des = fopen(arguments[2], "w")) == NULL)//open file destination
     {
-        printf("Error opening source file: %s\n", source_path);
-        return;
-    }
-
-    if ((des = fopen(destination_path, "w")) == NULL)
-    {
-        printf("Error opening destination file: %s\n", destination_path);
+        puts("error");
         fclose(src);
         return;
     }
-
-    while ((ch = fgetc(src)) != EOF)
+    while ((ch = fgetc(src)) != EOF)//copy the file
         fputc(ch, des);
 
     fclose(src);
     fclose(des);
-
-    printf("File copied successfully from %s to %s.\n", source_path, destination_path);
 }
-
 
 void get_dir()
 {
@@ -236,42 +200,10 @@ void get_dir()
 }
 
 
-char *get_next_token(char **str_ptr, const char *delim) {
-    if (*str_ptr == NULL) {
-        return NULL;
-    }
-
-    char *token_start = *str_ptr;
-    char *curr_ptr = *str_ptr;
-
-    int in_quotes = 0;
-
-    while (*curr_ptr != '\0') {
-        if (*curr_ptr == '\"') {
-            in_quotes = !in_quotes;
-        } else if (strchr(delim, *curr_ptr) && !in_quotes) {
-            break;
-        }
-        curr_ptr++;
-    }
-
-    if (*curr_ptr == '\0') {
-        *str_ptr = NULL;
-    } else {
-        *curr_ptr = '\0';
-        *str_ptr = curr_ptr + 1;
-    }
-
-    return token_start;
-}
-
-
-void delete(char *str) {
-    char *path;
-    while ((path = get_next_token(&str, " ")) != NULL) {
-        if (unlink(path) != 0)
-            printf("-myShell: delete: %s: No such file or directory\n", path);
-    }
+void delete(char **path)
+{
+    if (unlink(path[1]) != 0)
+        printf("-myShell: delete: %s: No such file or directory\n", path[1]);
 }
 
 
@@ -287,32 +219,6 @@ void systemCall(char **arguments)
     {
         if (execvp(arguments[0], arguments) == -1)
             exit(EXIT_FAILURE);
-    }
-}
-
-
-void mypipe(char **argv1,char ** argv2){
-
-    int fildes[2];
-    if (fork() == 0)
-    {
-        pipe(fildes);
-        if (fork() == 0)
-        {
-            /* first component of command line */
-            close(STDOUT_FILENO);
-            dup(fildes[1]);
-            close(fildes[1]);
-            close(fildes[0]);
-            execvp(argv1[0], argv1);
-        }
-        /* 2nd command component of command line */
-        close(STDIN_FILENO);
-        dup(fildes[0]);
-        close(fildes[0]);
-        close(fildes[1]);
-        /* standard input now comes from pipe */
-        execvp(argv2[0], argv2);
     }
 }
 
@@ -354,7 +260,7 @@ void echorite(char **args) {
 }
 
 
-void read(char **args) {
+void readFile(char **args) {
     FILE *file;
     char ch;
 
