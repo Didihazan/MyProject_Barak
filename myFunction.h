@@ -43,7 +43,7 @@ void echorite(char **args);
 void wordCount(char **args);
 void echoppend(char **args);
 void move(char **args);
-// void mypipe(char **argv1,char ** argv2);
+void mypipe(char **argv1,char ** argv2);
 void systemCall(char **arguments);
 void delete(char **path);
 void get_dir();

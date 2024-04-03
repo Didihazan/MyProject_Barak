@@ -4,44 +4,43 @@
 
 
  bool piping = false;
-char ***splitByPipe(char **args)
-{
-    int count1 =0;
-    int size1 = 2, size2 = 2;
-    char ***result = (char ***)malloc(sizeof(char **)*3);
-    result[0] = (char **)malloc(sizeof(char *) * size1);
-    result[1] = (char **)malloc(sizeof(char *) * size2);
-    int isPipe = 0;
-    for (int i = 0; args[i] != NULL; i++)
-    {
-        if (strcmp(args[i], "|") == 0)
-        {
-            isPipe = 1;
-            continue;
-        }
-        if (!isPipe)
-        {
-            result[0][count1] = args[i];
-            count1++;
-            if (count1 >= size1)
-            {
-                size1 *= 2;
-                result[0] = (char **)realloc(result[0], sizeof(char *) * size1);
+char ***splitByPipe(char **args) {
+    char ***result = (char ***)malloc(sizeof(char **) * 1);
+    int count = 0;
+    int indexResult = 0;
+    int size = 0;
+    for (int i = 0; args[i]; i++) {
+        count++;
+        size++;
+        if (strcmp(args[i], "|") == 0) {
+            piping = true;
+            result = (char ***)realloc(result, sizeof(char **) * (indexResult + 2));
+            result[indexResult] = (char **)malloc(sizeof(char *) * count);
+            for (int j = i - count + 1; j < count - 1; j++) {
+                result[indexResult][j - (i - count + 1)] = args[j];
             }
-        }
-        else
-        {
-            result[1][count2] = args[i];
-            count2++;
-            if (count2 >= size2)
-            {
-                size2 *= 2;
-                result[1] = (char **)realloc(result[1], sizeof(char *) * size2);
-            }
+            result[indexResult][count - 1] = NULL;
+            indexResult++;
+            count = 0;
         }
     }
-    result[0][count1] = NULL;
-    result[1][count2] = NULL;
+
+    // Handle last substring
+    if (piping) {
+        result = (char ***)realloc(result, sizeof(char **) * (indexResult + 2));
+        result[indexResult] = (char **)malloc(sizeof(char *) * (count + 1));
+        for (int j = size - count; j < size; j++) {
+            result[indexResult][j - (size - count)] = args[j];
+        }
+        result[indexResult][count] = NULL;
+        indexResult++;
+        result[indexResult] = NULL;
+    } else {
+        // If no pipe found, free and return NULL
+        free(result);
+        return NULL;
+    }
+
     return result;
 }
 
@@ -50,7 +49,7 @@ int main() {
     welcome();
  while (1)
     {
-        bool piping = false;
+    piping = false;
         errno = 0;
         getLocation();
         char *input = getInputFromUser();
@@ -62,7 +61,8 @@ int main() {
             free(arguments);
             logout(input);
 }
- if( errno ==22) continue;
+char ***splitArgumentsArr = splitByPipe(arguments);
+ if( errno !=0) continue;
       
         if (strcmp(input, "echo") == 0)
             echo(arguments);
@@ -71,8 +71,6 @@ int main() {
         }    
         else if (strcmp(input, "cp") == 0)
             cp(arguments);
-        free(arguments);
-        free(input);
         if(strcmp(arguments[0], "read") == 0){
             readFile(arguments);
         }
@@ -96,11 +94,12 @@ int main() {
         }
          else if (piping)
         {
-            // indexPipe
-            // arguments[indexPipe]=NULL;
-            // mypipe(arguments, arguments+indexPipe+1);
-            mypipe(arguments, arguments+/*indexPipe*/+1);
+            mypipe(splitArgumentsArr[0], splitArgumentsArr[1]);
             wait(NULL);
+            for(int i = 0; splitArgumentsArr[i]; i++){
+                free(splitArgumentsArr[i]);
+            }
+            free(splitArgumentsArr);
         }
         else
         {
