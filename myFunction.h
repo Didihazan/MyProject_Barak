@@ -38,6 +38,16 @@ void logout(char* input);
 void echo(char** arguments);
 void cd(char **);
 void cp(char ** arguments);
+void readFile(char **args);
+void echorite(char **args);
+void wordCount(char **args);
+void echoppend(char **args);
+void move(char **args);
+// void mypipe(char **argv1,char ** argv2);
+void systemCall(char **arguments);
+void delete(char **path);
+void get_dir();
+
 // char str[10]= hello
 // char* p =str;
 // *p ~ p[0]
